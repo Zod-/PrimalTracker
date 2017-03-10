@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Addon Author="Aramunn &amp; Zod Bain@Jabbit" APIVersion="15" Name="PrimalTracker" Description="Adds several features to make farming essences easier.">
+    <Script Name="PrimalTracker.lua"/>
+    <Form Name="PrimalTracker.xml"/>
+</Addon>
