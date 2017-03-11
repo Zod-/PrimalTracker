@@ -72,11 +72,10 @@ function PrimalTracker:BindHooks()
   self.addonMatchMaker.GetSortedRewardList = function(ref, arRewardList, ...)
     if self:IsLoaded() then
       local eSort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
-      if eSort >= knExtraSortBaseValue then
-        return self:GetSortedRewardList(eSort, arRewardList)
-      end
+      return self:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
+    else
+      return originalGetSortedRewardList(ref, arRewardList, ...)
     end
-    return originalGetSortedRewardList(ref, arRewardList, ...)
   end
 end
 
@@ -116,24 +115,70 @@ function PrimalTracker:AddAdditionalSortOptions()
   wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
 end
 
-function PrimalTracker:GetSortedRewardList(eSort, arRewardList)
-  if eSort == keExtraSort.Multiplier then
-    table.sort(arRewardList, function(a, b)
-      local nA = a.tRewardInfo and a.tRewardInfo.nMultiplier or 0
-      local nB = b.tRewardInfo and b.tRewardInfo.nMultiplier or 0
-      return nA > nB
+function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
+  if eSort == 1 then --content
+    table.sort(arRewardList, function(tA, tB)
+      local nCompare = self:CompareByContentType(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      return self:CompareByMultiplier(tA, tB) > 0
     end)
-  end
-  
-  if eSort == keExtraSort.Color then
-    table.sort(arRewardList, function(a, b)
-      local nA = a.tRewardInfo and a.tRewardInfo.monReward and a.tRewardInfo.monReward:GetAccountCurrencyType() or 0
-      local nB = b.tRewardInfo and b.tRewardInfo.monReward and b.tRewardInfo.monReward:GetAccountCurrencyType() or 0
-      return nA < nB
+  elseif eSort == 2 then --time remaining
+    table.sort(arRewardList, function(tA, tB)
+      local nCompare = self:CompareByTimeRemaining(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      return self:CompareByMultiplier(tA, tB) > 0
     end)
+  elseif eSort == keExtraSort.Multiplier then
+    table.sort(arRewardList, function(tA, tB)
+      local nCompare = self:CompareByMultiplier(tA, tB)
+      if nCompare ~= 0 then return nCompare > 0 end
+      return self:CompareByTimeRemaining(tA, tB) < 0
+    end)
+  elseif eSort == keExtraSort.Color then
+    table.sort(arRewardList, function(tA, tB)
+      local nCompare = self:CompareByColor(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      return self:CompareByMultiplier(tA, tB) > 0
+    end)
+  else
+    funcOrig(ref, arRewardList, ...)
   end
   
   return arRewardList
+end
+
+function PrimalTracker:CompareByContentType(tA, tB)
+  local nA = tA.nContentType or 0
+  local nB = tB.nContentType or 0
+  return self:CompareNumbers(nA, nB)
+end
+
+function PrimalTracker:CompareByTimeRemaining(tA, tB)
+  local nA = tA.nSecondsRemaining or 0
+  local nB = tB.nSecondsRemaining or 0
+  return self:CompareNumbers(nA, nB)
+end
+
+function PrimalTracker:CompareByMultiplier(tA, tB)
+  local nA = tA.tRewardInfo and tA.tRewardInfo.nMultiplier or 0
+  local nB = tB.tRewardInfo and tB.tRewardInfo.nMultiplier or 0
+  return self:CompareNumbers(nA, nB)
+end
+
+function PrimalTracker:CompareByColor(tA, tB)
+  local nA = tA.tRewardInfo and tA.tRewardInfo.monReward and tA.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+  local nB = tB.tRewardInfo and tB.tRewardInfo.monReward and tB.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+  return self:CompareNumbers(nA, nB)
+end
+
+function PrimalTracker:CompareNumbers(nA, nB)
+  if nA < nB then
+    return -1
+  elseif nA > nB then
+    return 1
+  else
+    return 0
+  end
 end
 
 function PrimalTracker:GetCurrentSeconds()
