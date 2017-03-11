@@ -59,7 +59,7 @@ function PrimalTracker:BindHooks()
       self:PlaceOverlays()
     end
   end
-  
+
   local originalHelperCreateFeaturedSort = self.addonMatchMaker.HelperCreateFeaturedSort
   self.addonMatchMaker.HelperCreateFeaturedSort = function(...)
     originalHelperCreateFeaturedSort(...)
@@ -67,12 +67,12 @@ function PrimalTracker:BindHooks()
       self:AddAdditionalSortOptions()
     end
   end
-  
+
   local originalGetSortedRewardList = self.addonMatchMaker.GetSortedRewardList
   self.addonMatchMaker.GetSortedRewardList = function(ref, arRewardList, ...)
     if self:IsLoaded() then
       local eSort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
-      return self:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
+      return self:GetSortedRewardList(eSort, arRewardList, originalGetSortedRewardList, ref, ...)
     else
       return originalGetSortedRewardList(ref, arRewardList, ...)
     end
@@ -95,23 +95,27 @@ function PrimalTracker:AddAdditionalSortOptions()
   local wndSortDropdown = wndSort:FindChild("FeaturedFilterDropdown")
   if not wndSortDropdown then return end
   local wndSortContainer = wndSortDropdown:FindChild("Container")
-  
-  local wndSortMultiplier = Apollo.LoadForm(self.addonMatchMaker.xmlDoc, "FeaturedContentFilterBtn", wndSortContainer, self.addonMatchMaker)
+
+  local refXmlDoc = self.addonMatchMaker.xmlDoc
+  local strSortOptionForm = "FeaturedContentFilterBtn"
+
+  local wndSortMultiplier = Apollo.LoadForm(refXmlDoc, strSortOptionForm, wndSortContainer, self.addonMatchMaker)
   wndSortMultiplier:SetData(keExtraSort.Multiplier)
   wndSortMultiplier:SetText("Multiplier")
   if wndSort:GetData() == keExtraSort.Multiplier then
     wndSortMultiplier:SetCheck(true)
   end
-  
-  local wndSortColor = Apollo.LoadForm(self.addonMatchMaker.xmlDoc, "FeaturedContentFilterBtn", wndSortContainer, self.addonMatchMaker)
+
+  local wndSortColor = Apollo.LoadForm(refXmlDoc, strSortOptionForm, wndSortContainer, self.addonMatchMaker)
   wndSortColor:SetData(keExtraSort.Color)
   wndSortColor:SetText("Essence Color")
   if wndSort:GetData() == keExtraSort.Color then
     wndSortColor:SetCheck(true)
   end
-  
-  local nLeft, nTop, nRight, nBottom = wndSortDropdown:GetOriginalLocation():GetOffsets()
-  wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11 )
+
+  local nLeft, nTop, nRight = wndSortDropdown:GetOriginalLocation():GetOffsets()
+  local nBottom = nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11
+  wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nBottom)
   wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
 end
 
@@ -151,7 +155,7 @@ function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, .
   else
     funcOrig(ref, arRewardList, ...)
   end
-  
+
   return arRewardList
 end
 
