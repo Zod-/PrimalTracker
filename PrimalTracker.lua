@@ -3,8 +3,10 @@ require "Window"
 local PrimalTracker = {}
 local Version = "0.1.1"
 
+local knExtraSortBaseValue = 100
+
 local keExtraSort = {
-  Multiplier = 100,
+  Multiplier = knExtraSortBaseValue + 0,
 }
 
 function PrimalTracker:new(o)
@@ -64,6 +66,17 @@ function PrimalTracker:BindHooks()
       self:AddAdditionalSortOptions()
     end
   end
+  
+  local originalGetSortedRewardList = self.addonMatchMaker.GetSortedRewardList
+  self.addonMatchMaker.GetSortedRewardList = function(ref, arRewardList, ...)
+    if self:IsLoaded() then
+      local eSort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
+      if eSort >= knExtraSortBaseValue then
+        return self:GetSortedRewardList(eSort, arRewardList)
+      end
+    end
+    return originalGetSortedRewardList(ref, arRewardList, ...)
+  end
 end
 
 function PrimalTracker:PlaceOverlays()
@@ -93,6 +106,18 @@ function PrimalTracker:AddAdditionalSortOptions()
   local nLeft, nTop, nRight, nBottom = wndSortDropdown:GetOriginalLocation():GetOffsets()
   wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11 )
   wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
+end
+
+function PrimalTracker:GetSortedRewardList(eSort, arRewardList)
+  if eSort == keExtraSort.Multiplier then
+    table.sort(arRewardList, function(a, b)
+      local nA = a.tRewardInfo and a.tRewardInfo.nMultiplier or 0
+      local nB = b.tRewardInfo and b.tRewardInfo.nMultiplier or 0
+      return nA > nB
+    end)
+  end
+  
+  return arRewardList
 end
 
 function PrimalTracker:GetCurrentSeconds()
