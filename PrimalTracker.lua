@@ -1,7 +1,7 @@
 require "Window"
 
 local PrimalTracker = {}
-local Version = "0.1.0"
+local Version = "0.1.1"
 
 function PrimalTracker:new(o)
   o = o or {}
