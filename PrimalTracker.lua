@@ -6,6 +6,8 @@ local Version = "0.1.1"
 local knExtraSortBaseValue = 100
 
 local keExtraSort = {
+  Content = 1,
+  TimeRemaining = 2,
   Multiplier = knExtraSortBaseValue + 0,
   Color = knExtraSortBaseValue + 1,
 }
@@ -18,6 +20,12 @@ function PrimalTracker:new(o)
   self.saveData = {
     rewards = {},
     saveVersion = Version
+  }
+  self.customSortFunctions = {
+    [keExtraSort.Content] = self.SortByContentType,
+    [keExtraSort.TimeRemaining] = self.SortByTimeRemaining,
+    [keExtraSort.Multiplier] = self.SortByMultiplier,
+    [keExtraSort.Color] = self.SortByColor
   }
   return o
 end
@@ -120,38 +128,12 @@ function PrimalTracker:AddAdditionalSortOptions()
 end
 
 function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
-  if eSort == 1 then --content
-    table.sort(arRewardList, function(tA, tB)
-        local nCompare = self:CompareCompletedStatus(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        nCompare = self:CompareByContentType(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        return self:CompareByMultiplier(tA, tB) > 0
-      end)
-  elseif eSort == 2 then --time remaining
-    table.sort(arRewardList, function(tA, tB)
-        local nCompare = self:CompareCompletedStatus(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        nCompare = self:CompareByTimeRemaining(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        return self:CompareByMultiplier(tA, tB) > 0
-      end)
-  elseif eSort == keExtraSort.Multiplier then
-    table.sort(arRewardList, function(tA, tB)
-        local nCompare = self:CompareCompletedStatus(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        nCompare = self:CompareByMultiplier(tA, tB)
-        if nCompare ~= 0 then return nCompare > 0 end
-        return self:CompareByTimeRemaining(tA, tB) < 0
-      end)
-  elseif eSort == keExtraSort.Color then
-    table.sort(arRewardList, function(tA, tB)
-        local nCompare = self:CompareCompletedStatus(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        nCompare = self:CompareByColor(tA, tB)
-        if nCompare ~= 0 then return nCompare < 0 end
-        return self:CompareByMultiplier(tA, tB) > 0
-      end)
+  if self.customSortFunctions[eSort] then
+    table.sort(arRewardList,
+      function (tA, tB)
+        return self.customSortFunctions[eSort](self, tA, tB)
+      end
+    )
   else
     funcOrig(ref, arRewardList, ...)
   end
@@ -159,12 +141,36 @@ function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, .
   return arRewardList
 end
 
-function PrimalTracker:CompareCompletedStatus(tA, tB)
-  local bAIsActive = self:IsRewardActive(self:ConvertRewardData(tA, self:GetCurrentSeconds()))
-  local bBIsActive = self:IsRewardActive(self:ConvertRewardData(tB, self:GetCurrentSeconds()))
-  if bAIsActive and not bBIsActive then return -1 end
-  if not bAIsActive and bBIsActive then return 1 end
-  return 0
+function PrimalTracker:SortByContentType(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByContentType(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
+end
+
+function PrimalTracker:SortByTimeRemaining(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByTimeRemaining(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
+end
+
+function PrimalTracker:SortByMultiplier(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByMultiplier(tA, tB)
+  if nCompare ~= 0 then return nCompare > 0 end
+  return self:CompareByTimeRemaining(tA, tB) < 0
+end
+
+function PrimalTracker:SortByColor(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByColor(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
 end
 
 function PrimalTracker:CompareByContentType(tA, tB)
@@ -189,6 +195,15 @@ function PrimalTracker:CompareByColor(tA, tB)
   local nA = tA.tRewardInfo and tA.tRewardInfo.monReward and tA.tRewardInfo.monReward:GetAccountCurrencyType() or 0
   local nB = tB.tRewardInfo and tB.tRewardInfo.monReward and tB.tRewardInfo.monReward:GetAccountCurrencyType() or 0
   return nA - nB
+end
+
+function PrimalTracker:CompareCompletedStatus(tA, tB)
+  local currentSeconds = self:GetCurrentSeconds()
+  local bAIsActive = self:IsRewardActive(self:ConvertRewardData(tA, currentSeconds))
+  local bBIsActive = self:IsRewardActive(self:ConvertRewardData(tB, currentSeconds))
+  if bAIsActive and not bBIsActive then return -1 end
+  if not bAIsActive and bBIsActive then return 1 end
+  return 0
 end
 
 function PrimalTracker:GetCurrentSeconds()
