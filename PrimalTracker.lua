@@ -6,8 +6,8 @@ local Version = "0.1.1"
 local knExtraSortBaseValue = 100
 
 local keExtraSort = {
-  Multiplier  = knExtraSortBaseValue + 0,
-  Color       = knExtraSortBaseValue + 1,
+  Multiplier = knExtraSortBaseValue + 0,
+  Color = knExtraSortBaseValue + 1,
 }
 
 function PrimalTracker:new(o)
@@ -122,36 +122,36 @@ end
 function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
   if eSort == 1 then --content
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareCompletedStatus(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      nCompare = self:CompareByContentType(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      return self:CompareByMultiplier(tA, tB) > 0
-    end)
+        local nCompare = self:CompareCompletedStatus(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        nCompare = self:CompareByContentType(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        return self:CompareByMultiplier(tA, tB) > 0
+      end)
   elseif eSort == 2 then --time remaining
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareCompletedStatus(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      nCompare = self:CompareByTimeRemaining(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      return self:CompareByMultiplier(tA, tB) > 0
-    end)
+        local nCompare = self:CompareCompletedStatus(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        nCompare = self:CompareByTimeRemaining(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        return self:CompareByMultiplier(tA, tB) > 0
+      end)
   elseif eSort == keExtraSort.Multiplier then
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareCompletedStatus(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      nCompare = self:CompareByMultiplier(tA, tB)
-      if nCompare ~= 0 then return nCompare > 0 end
-      return self:CompareByTimeRemaining(tA, tB) < 0
-    end)
+        local nCompare = self:CompareCompletedStatus(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        nCompare = self:CompareByMultiplier(tA, tB)
+        if nCompare ~= 0 then return nCompare > 0 end
+        return self:CompareByTimeRemaining(tA, tB) < 0
+      end)
   elseif eSort == keExtraSort.Color then
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareCompletedStatus(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      nCompare = self:CompareByColor(tA, tB)
-      if nCompare ~= 0 then return nCompare < 0 end
-      return self:CompareByMultiplier(tA, tB) > 0
-    end)
+        local nCompare = self:CompareCompletedStatus(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        nCompare = self:CompareByColor(tA, tB)
+        if nCompare ~= 0 then return nCompare < 0 end
+        return self:CompareByMultiplier(tA, tB) > 0
+      end)
   else
     funcOrig(ref, arRewardList, ...)
   end
