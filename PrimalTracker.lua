@@ -118,25 +118,33 @@ end
 function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
   if eSort == 1 then --content
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareByContentType(tA, tB)
+      local nCompare = self:CompareCompletedStatus(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      nCompare = self:CompareByContentType(tA, tB)
       if nCompare ~= 0 then return nCompare < 0 end
       return self:CompareByMultiplier(tA, tB) > 0
     end)
   elseif eSort == 2 then --time remaining
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareByTimeRemaining(tA, tB)
+      local nCompare = self:CompareCompletedStatus(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      nCompare = self:CompareByTimeRemaining(tA, tB)
       if nCompare ~= 0 then return nCompare < 0 end
       return self:CompareByMultiplier(tA, tB) > 0
     end)
   elseif eSort == keExtraSort.Multiplier then
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareByMultiplier(tA, tB)
+      local nCompare = self:CompareCompletedStatus(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      nCompare = self:CompareByMultiplier(tA, tB)
       if nCompare ~= 0 then return nCompare > 0 end
       return self:CompareByTimeRemaining(tA, tB) < 0
     end)
   elseif eSort == keExtraSort.Color then
     table.sort(arRewardList, function(tA, tB)
-      local nCompare = self:CompareByColor(tA, tB)
+      local nCompare = self:CompareCompletedStatus(tA, tB)
+      if nCompare ~= 0 then return nCompare < 0 end
+      nCompare = self:CompareByColor(tA, tB)
       if nCompare ~= 0 then return nCompare < 0 end
       return self:CompareByMultiplier(tA, tB) > 0
     end)
@@ -145,6 +153,14 @@ function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, .
   end
   
   return arRewardList
+end
+
+function PrimalTracker:CompareCompletedStatus(tA, tB)
+  local bAIsActive = self:IsRewardActive(self:ConvertRewardData(tA, self:GetCurrentSeconds()))
+  local bBIsActive = self:IsRewardActive(self:ConvertRewardData(tB, self:GetCurrentSeconds()))
+  if bAIsActive and not bBIsActive then return -1 end
+  if not bAIsActive and bBIsActive then return 1 end
+  return 0
 end
 
 function PrimalTracker:CompareByContentType(tA, tB)
@@ -257,6 +273,10 @@ end
 
 function PrimalTracker:GetRewardData(rewardWindow, currentSeconds)
   local rawData = rewardWindow:FindChild("InfoButton"):GetData()
+  return self:ConvertRewardData(rawData, currentSeconds)
+end
+
+function PrimalTracker:ConvertRewardData(rawData, currentSeconds)
   return {
     contentName = rawData.strContentName,
     endTime = currentSeconds + rawData.nSecondsRemaining,
