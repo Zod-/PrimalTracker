@@ -55,16 +55,16 @@ function PrimalTracker:BindHooks()
 end
 
 function PrimalTracker:PlaceOverlays()
-  local currentSecconds = self:GetCurrentSecconds()
+  local currentSeconds = self:GetCurrentSeconds()
   local rewardWindows = self:GetRewardWindows()
   for i = 1, #rewardWindows do
     local rewardWindow = rewardWindows[i]
-    local rewardData = self:GetRewardData(rewardWindow, currentSecconds)
+    local rewardData = self:GetRewardData(rewardWindow, currentSeconds)
     self:BuildOverlay(rewardWindow, rewardData)
   end
 end
 
-function PrimalTracker:GetCurrentSecconds()
+function PrimalTracker:GetCurrentSeconds()
   local currentTime = GameLib.GetServerTime()
   return os.time({
       ["year"] = currentTime.nYear,
@@ -130,11 +130,11 @@ function PrimalTracker:OnCompletedUncheck(handler, control)
   control:GetParent():FindChild("Shader"):Show(false)
 end
 
-function PrimalTracker:GetRewardData(rewardWindow, currentSecconds)
+function PrimalTracker:GetRewardData(rewardWindow, currentSeconds)
   local rawData = rewardWindow:FindChild("InfoButton"):GetData()
   return {
     contentName = rawData.strContentName,
-    endTime = currentSecconds + rawData.nSecondsRemaining,
+    endTime = currentSeconds + rawData.nSecondsRemaining,
     multiplier = rawData.tRewardInfo.nMultiplier,
   }
 end
@@ -152,10 +152,10 @@ function PrimalTracker:OnRestore(saveLevel, saveData)
 end
 
 function PrimalTracker:RemoveExpiredRewards()
-  local currentSecconds = self:GetCurrentSecconds()
+  local currentSeconds = self:GetCurrentSeconds()
   for i = #self.saveData.rewards, 1, -1 do
     local rewardData = self.saveData.rewards[i]
-    if currentSecconds > rewardData.endTime then
+    if currentSeconds > rewardData.endTime then
       table.remove(self.saveData.rewards, i)
     end
   end
