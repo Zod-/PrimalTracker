@@ -148,6 +148,17 @@ end
 function PrimalTracker:OnRestore(saveLevel, saveData)
   if saveLevel ~= GameLib.CodeEnumAddonSaveLevel.Realm then return end
   self.saveData = saveData
+  self:RemoveExpiredRewards()
+end
+
+function PrimalTracker:RemoveExpiredRewards()
+  local currentSecconds = self:GetCurrentSecconds()
+  for i = #self.saveData.rewards, 1, -1 do
+    local rewardData = self.saveData.rewards[i]
+    if currentSecconds > rewardData.endTime then
+      table.remove(self.saveData.rewards, i)
+    end
+  end
 end
 
 local PrimalTrackerInst = PrimalTracker:new()
