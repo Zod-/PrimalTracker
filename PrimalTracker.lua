@@ -19,7 +19,8 @@ function PrimalTracker:new(o)
   self.isXMLLoaded = false
   self.saveData = {
     rewards = {},
-    saveVersion = Version
+    saveVersion = Version,
+    sort = keExtraSort.Content,
   }
   self.customSortFunctions = {
     [keExtraSort.Content] = self.SortByContentType,
@@ -71,16 +72,14 @@ function PrimalTracker:BindHooks()
   local originalHelperCreateFeaturedSort = self.addonMatchMaker.HelperCreateFeaturedSort
   self.addonMatchMaker.HelperCreateFeaturedSort = function(...)
     originalHelperCreateFeaturedSort(...)
-    if self:IsLoaded() then
-      self:AddAdditionalSortOptions()
-    end
+    self:AddAdditionalSortOptions()
   end
 
   local originalGetSortedRewardList = self.addonMatchMaker.GetSortedRewardList
   self.addonMatchMaker.GetSortedRewardList = function(ref, arRewardList, ...)
     if self:IsLoaded() then
-      local eSort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
-      return self:GetSortedRewardList(eSort, arRewardList, originalGetSortedRewardList, ref, ...)
+      self.saveData.sort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
+      return self:GetSortedRewardList(self.saveData.sort, arRewardList, originalGetSortedRewardList, ref, ...)
     else
       return originalGetSortedRewardList(ref, arRewardList, ...)
     end
@@ -117,14 +116,23 @@ function PrimalTracker:AddAdditionalSortOptions()
   local wndSortColor = Apollo.LoadForm(refXmlDoc, strSortOptionForm, wndSortContainer, self.addonMatchMaker)
   wndSortColor:SetData(keExtraSort.Color)
   wndSortColor:SetText("Essence Color")
-  if wndSort:GetData() == keExtraSort.Color then
-    wndSortColor:SetCheck(true)
-  end
 
+  local sortContainerChildren = wndSortContainer:GetChildren()
   local nLeft, nTop, nRight = wndSortDropdown:GetOriginalLocation():GetOffsets()
-  local nBottom = nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11
+  local nBottom = nTop + (#sortContainerChildren * wndSortMultiplier:GetHeight()) + 11
   wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nBottom)
   wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
+
+  for i = 1, #sortContainerChildren do
+    local sortButton = sortContainerChildren[i]
+    if self.saveData.sort == sortButton:GetData() then
+      wndSort:SetData(sortButton:GetData())
+      wndSort:SetText(sortButton:GetText())
+      sortButton:SetCheck(true)
+    else
+      sortButton:SetCheck(false)
+    end
+  end
 end
 
 function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
@@ -302,6 +310,7 @@ end
 
 function PrimalTracker:OnRestore(saveLevel, saveData)
   if saveLevel ~= GameLib.CodeEnumAddonSaveLevel.Realm then return end
+  saveData.sort = saveData.sort or self.saveData.sort
   self.saveData = saveData
   self:RemoveExpiredRewards()
 end
