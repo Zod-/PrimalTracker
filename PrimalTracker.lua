@@ -141,6 +141,7 @@ end
 
 function PrimalTracker:OnSave(saveLevel)
   if saveLevel ~= GameLib.CodeEnumAddonSaveLevel.Realm then return end
+  self:RemoveExpiredRewards()
   self.saveData.saveVersion = Version
   return self.saveData
 end
