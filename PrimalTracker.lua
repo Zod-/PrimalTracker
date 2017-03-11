@@ -6,7 +6,8 @@ local Version = "0.1.1"
 local knExtraSortBaseValue = 100
 
 local keExtraSort = {
-  Multiplier = knExtraSortBaseValue + 0,
+  Multiplier  = knExtraSortBaseValue + 0,
+  Color       = knExtraSortBaseValue + 1,
 }
 
 function PrimalTracker:new(o)
@@ -103,6 +104,13 @@ function PrimalTracker:AddAdditionalSortOptions()
     wndSortMultiplier:SetCheck(true)
   end
   
+  local wndSortColor = Apollo.LoadForm(self.addonMatchMaker.xmlDoc, "FeaturedContentFilterBtn", wndSortContainer, self.addonMatchMaker)
+  wndSortColor:SetData(keExtraSort.Color)
+  wndSortColor:SetText("Essence Color")
+  if wndSort:GetData() == keExtraSort.Color then
+    wndSortColor:SetCheck(true)
+  end
+  
   local nLeft, nTop, nRight, nBottom = wndSortDropdown:GetOriginalLocation():GetOffsets()
   wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11 )
   wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
@@ -114,6 +122,14 @@ function PrimalTracker:GetSortedRewardList(eSort, arRewardList)
       local nA = a.tRewardInfo and a.tRewardInfo.nMultiplier or 0
       local nB = b.tRewardInfo and b.tRewardInfo.nMultiplier or 0
       return nA > nB
+    end)
+  end
+  
+  if eSort == keExtraSort.Color then
+    table.sort(arRewardList, function(a, b)
+      local nA = a.tRewardInfo and a.tRewardInfo.monReward and a.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+      local nB = b.tRewardInfo and b.tRewardInfo.monReward and b.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+      return nA < nB
     end)
   end
   
