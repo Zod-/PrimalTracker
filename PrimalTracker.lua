@@ -170,35 +170,25 @@ end
 function PrimalTracker:CompareByContentType(tA, tB)
   local nA = tA.nContentType or 0
   local nB = tB.nContentType or 0
-  return self:CompareNumbers(nA, nB)
+  return nA - nB
 end
 
 function PrimalTracker:CompareByTimeRemaining(tA, tB)
   local nA = tA.nSecondsRemaining or 0
   local nB = tB.nSecondsRemaining or 0
-  return self:CompareNumbers(nA, nB)
+  return nA - nB
 end
 
 function PrimalTracker:CompareByMultiplier(tA, tB)
   local nA = tA.tRewardInfo and tA.tRewardInfo.nMultiplier or 0
   local nB = tB.tRewardInfo and tB.tRewardInfo.nMultiplier or 0
-  return self:CompareNumbers(nA, nB)
+  return nA - nB
 end
 
 function PrimalTracker:CompareByColor(tA, tB)
   local nA = tA.tRewardInfo and tA.tRewardInfo.monReward and tA.tRewardInfo.monReward:GetAccountCurrencyType() or 0
   local nB = tB.tRewardInfo and tB.tRewardInfo.monReward and tB.tRewardInfo.monReward:GetAccountCurrencyType() or 0
-  return self:CompareNumbers(nA, nB)
-end
-
-function PrimalTracker:CompareNumbers(nA, nB)
-  if nA < nB then
-    return -1
-  elseif nA > nB then
-    return 1
-  else
-    return 0
-  end
+  return nA - nB
 end
 
 function PrimalTracker:GetCurrentSeconds()
