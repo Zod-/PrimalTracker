@@ -3,6 +3,10 @@ require "Window"
 local PrimalTracker = {}
 local Version = "0.1.1"
 
+local keExtraSort = {
+  Multiplier = 100,
+}
+
 function PrimalTracker:new(o)
   o = o or {}
   setmetatable(o, self)
@@ -52,6 +56,14 @@ function PrimalTracker:BindHooks()
       self:PlaceOverlays()
     end
   end
+  
+  local originalHelperCreateFeaturedSort = self.addonMatchMaker.HelperCreateFeaturedSort
+  self.addonMatchMaker.HelperCreateFeaturedSort = function(...)
+    originalHelperCreateFeaturedSort(...)
+    if self:IsLoaded() then
+      self:AddAdditionalSortOptions()
+    end
+  end
 end
 
 function PrimalTracker:PlaceOverlays()
@@ -62,6 +74,25 @@ function PrimalTracker:PlaceOverlays()
     local rewardData = self:GetRewardData(rewardWindow, currentSeconds)
     self:BuildOverlay(rewardWindow, rewardData)
   end
+end
+
+function PrimalTracker:AddAdditionalSortOptions()
+  local wndSort = self:GetSortWindow()
+  if not wndSort then return end
+  local wndSortDropdown = wndSort:FindChild("FeaturedFilterDropdown")
+  if not wndSortDropdown then return end
+  local wndSortContainer = wndSortDropdown:FindChild("Container")
+  
+  local wndSortMultiplier = Apollo.LoadForm(self.addonMatchMaker.xmlDoc, "FeaturedContentFilterBtn", wndSortContainer, self.addonMatchMaker)
+  wndSortMultiplier:SetData(keExtraSort.Multiplier)
+  wndSortMultiplier:SetText("Multiplier")
+  if wndSort:GetData() == keExtraSort.Multiplier then
+    wndSortMultiplier:SetCheck(true)
+  end
+  
+  local nLeft, nTop, nRight, nBottom = wndSortDropdown:GetOriginalLocation():GetOffsets()
+  wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nTop + (#wndSortContainer:GetChildren() * wndSortMultiplier:GetHeight()) + 11 )
+  wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
 end
 
 function PrimalTracker:GetCurrentSeconds()
@@ -85,6 +116,14 @@ function PrimalTracker:GetRewardWindows()
   rewards = rewards and rewards:FindChild("TabContent:RewardContent")
   rewards = rewards and rewards:GetChildren() or {}
   return rewards
+end
+
+function PrimalTracker:GetSortWindow()
+  --self.addonMatchMaker.tWndRefs.wndFeaturedSort:FindChild("FeaturedFilterDropdown:Container")
+  local sort = self.addonMatchMaker
+  sort = sort and sort.tWndRefs
+  sort = sort and sort.wndFeaturedSort
+  return sort
 end
 
 function PrimalTracker:BuildOverlay(rewardWindow, rewardData)
