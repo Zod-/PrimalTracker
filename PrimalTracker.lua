@@ -9,7 +9,8 @@ function PrimalTracker:new(o)
   self.__index = self
   self.isXMLLoaded = false
   self.saveData = {
-    rewards = {}
+    rewards = {},
+    saveVersion = Version
   }
   return o
 end
@@ -140,6 +141,7 @@ end
 
 function PrimalTracker:OnSave(saveLevel)
   if saveLevel ~= GameLib.CodeEnumAddonSaveLevel.Realm then return end
+  self.saveData.saveVersion = Version
   return self.saveData
 end
 
