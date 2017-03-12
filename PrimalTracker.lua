@@ -3,6 +3,15 @@ require "Window"
 local PrimalTracker = {}
 local Version = "0.1.1"
 
+local knExtraSortBaseValue = 100
+
+local keExtraSort = {
+  Content = 1,
+  TimeRemaining = 2,
+  Multiplier = knExtraSortBaseValue + 0,
+  Color = knExtraSortBaseValue + 1,
+}
+
 function PrimalTracker:new(o)
   o = o or {}
   setmetatable(o, self)
@@ -10,7 +19,14 @@ function PrimalTracker:new(o)
   self.isXMLLoaded = false
   self.saveData = {
     rewards = {},
-    saveVersion = Version
+    saveVersion = Version,
+    sort = keExtraSort.Content,
+  }
+  self.customSortFunctions = {
+    [keExtraSort.Content] = self.SortByContentType,
+    [keExtraSort.TimeRemaining] = self.SortByTimeRemaining,
+    [keExtraSort.Multiplier] = self.SortByMultiplier,
+    [keExtraSort.Color] = self.SortByColor
   }
   return o
 end
@@ -52,6 +68,22 @@ function PrimalTracker:BindHooks()
       self:PlaceOverlays()
     end
   end
+
+  local originalHelperCreateFeaturedSort = self.addonMatchMaker.HelperCreateFeaturedSort
+  self.addonMatchMaker.HelperCreateFeaturedSort = function(...)
+    originalHelperCreateFeaturedSort(...)
+    self:AddAdditionalSortOptions()
+  end
+
+  local originalGetSortedRewardList = self.addonMatchMaker.GetSortedRewardList
+  self.addonMatchMaker.GetSortedRewardList = function(ref, arRewardList, ...)
+    if self:IsLoaded() then
+      self.saveData.sort = self.addonMatchMaker.tWndRefs.wndFeaturedSort:GetData()
+      return self:GetSortedRewardList(self.saveData.sort, arRewardList, originalGetSortedRewardList, ref, ...)
+    else
+      return originalGetSortedRewardList(ref, arRewardList, ...)
+    end
+  end
 end
 
 function PrimalTracker:PlaceOverlays()
@@ -62,6 +94,124 @@ function PrimalTracker:PlaceOverlays()
     local rewardData = self:GetRewardData(rewardWindow, currentSeconds)
     self:BuildOverlay(rewardWindow, rewardData)
   end
+end
+
+function PrimalTracker:AddAdditionalSortOptions()
+  local wndSort = self:GetSortWindow()
+  if not wndSort then return end
+  local wndSortDropdown = wndSort:FindChild("FeaturedFilterDropdown")
+  if not wndSortDropdown then return end
+  local wndSortContainer = wndSortDropdown:FindChild("Container")
+
+  local refXmlDoc = self.addonMatchMaker.xmlDoc
+  local strSortOptionForm = "FeaturedContentFilterBtn"
+
+  local wndSortMultiplier = Apollo.LoadForm(refXmlDoc, strSortOptionForm, wndSortContainer, self.addonMatchMaker)
+  wndSortMultiplier:SetData(keExtraSort.Multiplier)
+  wndSortMultiplier:SetText("Multiplier")
+  if wndSort:GetData() == keExtraSort.Multiplier then
+    wndSortMultiplier:SetCheck(true)
+  end
+
+  local wndSortColor = Apollo.LoadForm(refXmlDoc, strSortOptionForm, wndSortContainer, self.addonMatchMaker)
+  wndSortColor:SetData(keExtraSort.Color)
+  wndSortColor:SetText("Essence Color")
+
+  local sortContainerChildren = wndSortContainer:GetChildren()
+  local nLeft, nTop, nRight = wndSortDropdown:GetOriginalLocation():GetOffsets()
+  local nBottom = nTop + (#sortContainerChildren * wndSortMultiplier:GetHeight()) + 11
+  wndSortDropdown:SetAnchorOffsets(nLeft, nTop, nRight, nBottom)
+  wndSortContainer:ArrangeChildrenVert(Window.CodeEnumArrangeOrigin.LeftOrTop)
+
+  for i = 1, #sortContainerChildren do
+    local sortButton = sortContainerChildren[i]
+    if self.saveData.sort == sortButton:GetData() then
+      wndSort:SetData(sortButton:GetData())
+      wndSort:SetText(sortButton:GetText())
+      sortButton:SetCheck(true)
+    else
+      sortButton:SetCheck(false)
+    end
+  end
+end
+
+function PrimalTracker:GetSortedRewardList(eSort, arRewardList, funcOrig, ref, ...)
+  if self.customSortFunctions[eSort] then
+    table.sort(arRewardList,
+      function (tA, tB)
+        return self.customSortFunctions[eSort](self, tA, tB)
+      end
+    )
+  else
+    funcOrig(ref, arRewardList, ...)
+  end
+
+  return arRewardList
+end
+
+function PrimalTracker:SortByContentType(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByContentType(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
+end
+
+function PrimalTracker:SortByTimeRemaining(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByTimeRemaining(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
+end
+
+function PrimalTracker:SortByMultiplier(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByMultiplier(tA, tB)
+  if nCompare ~= 0 then return nCompare > 0 end
+  return self:CompareByTimeRemaining(tA, tB) < 0
+end
+
+function PrimalTracker:SortByColor(tA, tB)
+  local nCompare = self:CompareCompletedStatus(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  nCompare = self:CompareByColor(tA, tB)
+  if nCompare ~= 0 then return nCompare < 0 end
+  return self:CompareByMultiplier(tA, tB) > 0
+end
+
+function PrimalTracker:CompareByContentType(tA, tB)
+  local nA = tA.nContentType or 0
+  local nB = tB.nContentType or 0
+  return nA - nB
+end
+
+function PrimalTracker:CompareByTimeRemaining(tA, tB)
+  local nA = tA.nSecondsRemaining or 0
+  local nB = tB.nSecondsRemaining or 0
+  return nA - nB
+end
+
+function PrimalTracker:CompareByMultiplier(tA, tB)
+  local nA = tA.tRewardInfo and tA.tRewardInfo.nMultiplier or 0
+  local nB = tB.tRewardInfo and tB.tRewardInfo.nMultiplier or 0
+  return nA - nB
+end
+
+function PrimalTracker:CompareByColor(tA, tB)
+  local nA = tA.tRewardInfo and tA.tRewardInfo.monReward and tA.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+  local nB = tB.tRewardInfo and tB.tRewardInfo.monReward and tB.tRewardInfo.monReward:GetAccountCurrencyType() or 0
+  return nA - nB
+end
+
+function PrimalTracker:CompareCompletedStatus(tA, tB)
+  local currentSeconds = self:GetCurrentSeconds()
+  local bAIsActive = self:IsRewardActive(self:ConvertRewardData(tA, currentSeconds))
+  local bBIsActive = self:IsRewardActive(self:ConvertRewardData(tB, currentSeconds))
+  if bAIsActive and not bBIsActive then return -1 end
+  if not bAIsActive and bBIsActive then return 1 end
+  return 0
 end
 
 function PrimalTracker:GetCurrentSeconds()
@@ -85,6 +235,14 @@ function PrimalTracker:GetRewardWindows()
   rewards = rewards and rewards:FindChild("TabContent:RewardContent")
   rewards = rewards and rewards:GetChildren() or {}
   return rewards
+end
+
+function PrimalTracker:GetSortWindow()
+  --self.addonMatchMaker.tWndRefs.wndFeaturedSort:FindChild("FeaturedFilterDropdown:Container")
+  local sort = self.addonMatchMaker
+  sort = sort and sort.tWndRefs
+  sort = sort and sort.wndFeaturedSort
+  return sort
 end
 
 function PrimalTracker:BuildOverlay(rewardWindow, rewardData)
@@ -132,6 +290,10 @@ end
 
 function PrimalTracker:GetRewardData(rewardWindow, currentSeconds)
   local rawData = rewardWindow:FindChild("InfoButton"):GetData()
+  return self:ConvertRewardData(rawData, currentSeconds)
+end
+
+function PrimalTracker:ConvertRewardData(rawData, currentSeconds)
   return {
     contentName = rawData.strContentName,
     endTime = currentSeconds + rawData.nSecondsRemaining,
@@ -148,6 +310,7 @@ end
 
 function PrimalTracker:OnRestore(saveLevel, saveData)
   if saveLevel ~= GameLib.CodeEnumAddonSaveLevel.Realm then return end
+  saveData.sort = saveData.sort or self.saveData.sort
   self.saveData = saveData
   self:RemoveExpiredRewards()
 end
