@@ -1,7 +1,7 @@
 require "Window"
 
 local PrimalTracker = {}
-local Version = "0.1.1"
+local Version = "0.1.2"
 
 local knExtraSortBaseValue = 100
 
