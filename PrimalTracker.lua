@@ -41,12 +41,6 @@ end
 
 function PrimalTracker:OnLoad()
   self:LoadXML()
-  self:SetupEssenceDisplay()
-end
-
-function PrimalTracker:SetupEssenceDisplay()
-  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
-  self.arrEssenceLootLog = {}
 end
 
 function PrimalTracker:LoadXML()
@@ -56,8 +50,27 @@ end
 
 function PrimalTracker:OnDocumentLoaded(args)
   self.isXMLLoaded = true
+  self:SetupEssenceDisplay()
   self:LoadMatchMaker()
   self:BindHooks()
+end
+
+function PrimalTracker:SetupEssenceDisplay()
+  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
+  self.arrEssenceLootLog = {}
+  self.wndEssenceDisplay = Apollo.LoadForm(self.xmlDoc, "EssenceDisplay", nil, self)
+  local monRed = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.RedEssence)
+  local monBlue = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.BlueEssence)
+  local monGreen = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.GreenEssence)
+  local monPurple = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.PurpleEssence)
+  monRed:SetAmount(0)
+  monBlue:SetAmount(0)
+  monGreen:SetAmount(0)
+  monPurple:SetAmount(0)
+  self.wndEssenceDisplay:FindChild("Currencies:Red"):SetAmount(monRed, true)
+  self.wndEssenceDisplay:FindChild("Currencies:Blue"):SetAmount(monBlue, true)
+  self.wndEssenceDisplay:FindChild("Currencies:Green"):SetAmount(monGreen, true)
+  self.wndEssenceDisplay:FindChild("Currencies:Purple"):SetAmount(monPurple, true)
 end
 
 function PrimalTracker:LoadMatchMaker()
