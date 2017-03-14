@@ -40,8 +40,6 @@ function PrimalTracker:IsLoaded()
 end
 
 function PrimalTracker:OnLoad()
-  self:LoadMatchMaker()
-  self:BindHooks()
   self:LoadXML()
   self:SetupEssenceDisplay()
 end
@@ -58,6 +56,8 @@ end
 
 function PrimalTracker:OnDocumentLoaded(args)
   self.isXMLLoaded = true
+  self:LoadMatchMaker()
+  self:BindHooks()
 end
 
 function PrimalTracker:LoadMatchMaker()
