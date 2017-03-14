@@ -43,6 +43,8 @@ function PrimalTracker:OnLoad()
   self:LoadMatchMaker()
   self:BindHooks()
   self:LoadXML()
+  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
+  self.arrEssenceLootLog = {}
 end
 
 function PrimalTracker:LoadXML()
@@ -299,6 +301,94 @@ function PrimalTracker:ConvertRewardData(rawData, currentSeconds)
     endTime = currentSeconds + rawData.nSecondsRemaining,
     multiplier = rawData.tRewardInfo.nMultiplier,
   }
+end
+
+function PrimalTracker:OnChannelUpdate_Loot(eType, tEventArgs)
+  self.arrLootLog = self.arrLootLog or {}
+  table.insert(self.arrLootLog, {
+    eType = eType,
+    tEventArgs = tEventArgs,
+  })
+  
+  if eType ~= GameLib.ChannelUpdateLootType.Currency then return end
+  if not tEventArgs.monNew then return end
+  
+  if self:IsEssenceType(tEventArgs.monNew) then
+    table.insert(self.arrEssenceLootLog, {
+      eType = eType,
+      tEventArgs = tEventArgs,
+      monNew = {
+        GetAccountCurrencyType = tEventArgs.monNew:GetAccountCurrencyType(),
+        GetAltType = tEventArgs.monNew:GetAltType(),
+        GetAmount = tEventArgs.monNew:GetAmount(),
+        GetDenomAmounts = tEventArgs.monNew:GetDenomAmounts(),
+        GetDenomInfo = tEventArgs.monNew:GetDenomInfo(),
+        GetExchangeItem = tEventArgs.monNew:GetExchangeItem(),
+        GetMoneyString = tEventArgs.monNew:GetMoneyString(),
+        GetMoneyType = tEventArgs.monNew:GetMoneyType(),
+        GetTypeString = tEventArgs.monNew:GetTypeString(),
+      },
+      monSignatureBonus = {
+        GetAccountCurrencyType = tEventArgs.monSignatureBonus:GetAccountCurrencyType(),
+        GetAltType = tEventArgs.monSignatureBonus:GetAltType(),
+        GetAmount = tEventArgs.monSignatureBonus:GetAmount(),
+        GetDenomAmounts = tEventArgs.monSignatureBonus:GetDenomAmounts(),
+        GetDenomInfo = tEventArgs.monSignatureBonus:GetDenomInfo(),
+        GetExchangeItem = tEventArgs.monSignatureBonus:GetExchangeItem(),
+        GetMoneyString = tEventArgs.monSignatureBonus:GetMoneyString(),
+        GetMoneyType = tEventArgs.monSignatureBonus:GetMoneyType(),
+        GetTypeString = tEventArgs.monSignatureBonus:GetTypeString(),
+      },
+      monEssenceBonus = {
+        GetAccountCurrencyType = tEventArgs.monEssenceBonus:GetAccountCurrencyType(),
+        GetAltType = tEventArgs.monEssenceBonus:GetAltType(),
+        GetAmount = tEventArgs.monEssenceBonus:GetAmount(),
+        GetDenomAmounts = tEventArgs.monEssenceBonus:GetDenomAmounts(),
+        GetDenomInfo = tEventArgs.monEssenceBonus:GetDenomInfo(),
+        GetExchangeItem = tEventArgs.monEssenceBonus:GetExchangeItem(),
+        GetMoneyString = tEventArgs.monEssenceBonus:GetMoneyString(),
+        GetMoneyType = tEventArgs.monEssenceBonus:GetMoneyType(),
+        GetTypeString = tEventArgs.monEssenceBonus:GetTypeString(),
+      },
+    })
+    local strColor = tEventArgs.monNew:GetTypeString()
+    local nTotalAmount = tEventArgs.monNew:GetAmount()
+    local nSignatureBonus = tEventArgs.monSignatureBonus:GetAmount()
+    local nMultiplier = tEventArgs.monEssenceBonus:GetAmount()
+    Print(strColor..": "..nTotalAmount.." (+"..nSignatureBonus..") [x"..nMultiplier.."]")
+  end
+end
+
+function PrimalTracker:IsEssenceType(monToCheck)
+  local eMoneyType = monToCheck:GetMoneyType()
+  if self:IsMoneyTypeEssence(eMoneyType) then
+    return true
+  end
+  if eMoneyType ~= Money.CodeEnumCurrencyType.GroupCurrency then
+    return false
+  end
+  local eAccountCurrencyType = monToCheck:GetAccountCurrencyType()
+  if self:IsAccountCurrencyTypeEssence(eAccountCurrencyType) then
+    return true
+  end
+end
+
+function PrimalTracker:IsMoneyTypeEssence(eMoneyType)
+  local bIsEssenceType = false
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.RedEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.BlueEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.GreenEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.PurpleEssence
+  return bIsEssenceType
+end
+
+function PrimalTracker:IsAccountCurrencyTypeEssence(eAccountCurrencyType)
+  local bIsEssenceType = false
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.RedEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.BlueEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.GreenEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.PurpleEssence
+  return bIsEssenceType
 end
 
 function PrimalTracker:OnSave(saveLevel)
