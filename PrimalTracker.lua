@@ -43,6 +43,10 @@ function PrimalTracker:OnLoad()
   self:LoadMatchMaker()
   self:BindHooks()
   self:LoadXML()
+  self:SetupEssenceDisplay()
+end
+
+function PrimalTracker:SetupEssenceDisplay()
   Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
   self.arrEssenceLootLog = {}
 end
