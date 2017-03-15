@@ -56,7 +56,6 @@ function PrimalTracker:OnDocumentLoaded(args)
 end
 
 function PrimalTracker:SetupEssenceDisplay()
-  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
   self.arrEssenceLootLog = {}
   self.wndEssenceDisplay = Apollo.LoadForm(self.xmlDoc, "EssenceDisplay", nil, self)
   local monRed = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.RedEssence)
@@ -71,6 +70,8 @@ function PrimalTracker:SetupEssenceDisplay()
   self.wndEssenceDisplay:FindChild("Currencies:Blue"):SetAmount(monBlue, true)
   self.wndEssenceDisplay:FindChild("Currencies:Green"):SetAmount(monGreen, true)
   self.wndEssenceDisplay:FindChild("Currencies:Purple"):SetAmount(monPurple, true)
+  self.timerEssenceDisplayTimeout = ApolloTimer.Create(5, false, "OnEssenceDisplayTimeout", self)
+  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
 end
 
 function PrimalTracker:LoadMatchMaker()
@@ -321,16 +322,10 @@ function PrimalTracker:ConvertRewardData(rawData, currentSeconds)
 end
 
 function PrimalTracker:OnChannelUpdate_Loot(eType, tEventArgs)
-  self.arrLootLog = self.arrLootLog or {}
-  table.insert(self.arrLootLog, {
-    eType = eType,
-    tEventArgs = tEventArgs,
-  })
-  
   if eType ~= GameLib.ChannelUpdateLootType.Currency then return end
   if not tEventArgs.monNew then return end
-  
   if self:IsEssenceType(tEventArgs.monNew) then
+    --TODO remove debug stuff
     table.insert(self.arrEssenceLootLog, {
       eType = eType,
       tEventArgs = tEventArgs,
@@ -373,18 +368,19 @@ function PrimalTracker:OnChannelUpdate_Loot(eType, tEventArgs)
     local nSignatureBonus = tEventArgs.monSignatureBonus:GetAmount()
     local nMultiplier = tEventArgs.monEssenceBonus:GetAmount()
     Print(strColor..": "..nTotalAmount.." (+"..nSignatureBonus..") [x"..nMultiplier.."]")
+    self:AddToEssenceDisplay(tEventArgs.monNew)
   end
 end
 
-function PrimalTracker:IsEssenceType(monToCheck)
-  local eMoneyType = monToCheck:GetMoneyType()
+function PrimalTracker:IsEssenceType(mon)
+  local eMoneyType = mon:GetMoneyType()
   if self:IsMoneyTypeEssence(eMoneyType) then
     return true
   end
   if eMoneyType ~= Money.CodeEnumCurrencyType.GroupCurrency then
     return false
   end
-  local eAccountCurrencyType = monToCheck:GetAccountCurrencyType()
+  local eAccountCurrencyType = mon:GetAccountCurrencyType()
   if self:IsAccountCurrencyTypeEssence(eAccountCurrencyType) then
     return true
   end
@@ -406,6 +402,33 @@ function PrimalTracker:IsAccountCurrencyTypeEssence(eAccountCurrencyType)
   bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.GreenEssence
   bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.PurpleEssence
   return bIsEssenceType
+end
+
+function PrimalTracker:AddToEssenceDisplay(mon)
+  self.timerEssenceDisplayTimeout:Stop()
+  self.timerEssenceDisplayTimeout:Start()
+  local strColor = mon:GetTypeString()
+  local nNew = mon:GetAmount()
+  local arrEssences = self.wndEssenceDisplay:FindChild("Currencies"):GetChildren()
+  for idx, wndEssence in ipairs(arrEssences) do
+    local monCurrent = wndEssence:GetCurrency()
+    if strColor == monCurrent:GetTypeString() then
+      wndEssence:Show(true, true)
+      local nCurrent = monCurrent:GetAmount()
+      monCurrent:SetAmount(nCurrent + nNew)
+      wndEssence:SetAmount(monCurrent)
+    end
+  end
+end
+
+function PrimalTracker:OnEssenceDisplayTimeout()
+  local arrEssences = self.wndEssenceDisplay:FindChild("Currencies"):GetChildren()
+  for idx, wndEssence in ipairs(arrEssences) do
+    wndEssence:Show(false)
+    local monCurrent = wndEssence:GetCurrency()
+    monCurrent:SetAmount(0)
+    wndEssence:SetAmount(monCurrent)
+  end
 end
 
 function PrimalTracker:OnSave(saveLevel)
