@@ -14,6 +14,6 @@
             <Control Class="CashWindow" LAnchorPoint="0.5" LAnchorOffset="0" TAnchorPoint="0" TAnchorOffset="0" RAnchorPoint="0.75" RAnchorOffset="0" BAnchorPoint="1" BAnchorOffset="0" TooltipType="OnCursor" RelativeToClient="1" Font="CRB_Header10" Text="" Template="Default" BGColor="ffffffff" TextColor="UI_BtnTextGrayListFlyby" DT_RIGHT="1" Name="Green" TooltipColor="" DT_CENTER="1" DT_VCENTER="1" SkipZeroes="0" Visible="0"/>
             <Control Class="CashWindow" LAnchorPoint="0.75" LAnchorOffset="0" TAnchorPoint="0" TAnchorOffset="0" RAnchorPoint="1" RAnchorOffset="0" BAnchorPoint="1" BAnchorOffset="0" TooltipType="OnCursor" RelativeToClient="1" Font="CRB_Header10" Text="" Template="Default" BGColor="ffffffff" TextColor="UI_BtnTextGrayListFlyby" DT_RIGHT="1" Name="Purple" TooltipColor="" DT_CENTER="1" DT_VCENTER="1" SkipZeroes="0" Visible="0"/>
         </Control>
-        <Pixie LAnchorPoint="0" LAnchorOffset="0" TAnchorPoint="0" TAnchorOffset="0" RAnchorPoint="1" RAnchorOffset="0" BAnchorPoint="1" BAnchorOffset="0" Sprite="BasicSprites:WhiteFill" BGColor="black" TextColor="black" Rotation="0" Font="Default" Text=""/>
+        <Pixie LAnchorPoint="0" LAnchorOffset="0" TAnchorPoint="0" TAnchorOffset="0" RAnchorPoint="1" RAnchorOffset="0" BAnchorPoint="1" BAnchorOffset="0" Sprite="BK3:UI_BK3_Holo_Snippet" BGColor="black" TextColor="black" Rotation="0" Font="Default" Text=""/>
     </Form>
 </Forms>
