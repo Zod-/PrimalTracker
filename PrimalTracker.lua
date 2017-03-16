@@ -58,18 +58,12 @@ end
 function PrimalTracker:SetupEssenceDisplay()
   self.arrEssenceLootLog = {}
   self.wndEssenceDisplay = Apollo.LoadForm(self.xmlDoc, "EssenceDisplay", nil, self)
-  local monRed = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.RedEssence)
-  local monBlue = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.BlueEssence)
-  local monGreen = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.GreenEssence)
-  local monPurple = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType.PurpleEssence)
-  monRed:SetAmount(0)
-  monBlue:SetAmount(0)
-  monGreen:SetAmount(0)
-  monPurple:SetAmount(0)
-  self.wndEssenceDisplay:FindChild("Currencies:Red"):SetAmount(monRed, true)
-  self.wndEssenceDisplay:FindChild("Currencies:Blue"):SetAmount(monBlue, true)
-  self.wndEssenceDisplay:FindChild("Currencies:Green"):SetAmount(monGreen, true)
-  self.wndEssenceDisplay:FindChild("Currencies:Purple"):SetAmount(monPurple, true)
+  local arrColors = { "Red", "Blue", "Green", "Purple" }
+  for idx, strColor in ipairs(arrColors) do
+    local mon = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType[strColor.."Essence"])
+    mon:SetAmount(0)
+    self.wndEssenceDisplay:FindChild("Currencies:"..strColor):SetAmount(mon, true)
+  end
   self.timerEssenceDisplayTimeout = ApolloTimer.Create(5, false, "OnEssenceDisplayTimeout", self)
   Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
   Apollo.RegisterEventHandler("WindowManagementReady", "OnWindowManagementReady", self)
