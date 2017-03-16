@@ -72,6 +72,9 @@ function PrimalTracker:SetupEssenceDisplay()
   self.wndEssenceDisplay:FindChild("Currencies:Purple"):SetAmount(monPurple, true)
   self.timerEssenceDisplayTimeout = ApolloTimer.Create(5, false, "OnEssenceDisplayTimeout", self)
   Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
+  Apollo.RegisterEventHandler("WindowManagementReady", "OnWindowManagementReady", self)
+  Apollo.RegisterEventHandler("WindowManagementUpdate", "OnWindowManagementUpdate", self)
+  self:OnWindowManagementReady()
 end
 
 function PrimalTracker:LoadMatchMaker()
@@ -428,6 +431,28 @@ function PrimalTracker:OnEssenceDisplayTimeout()
     local monCurrent = wndEssence:GetCurrency()
     monCurrent:SetAmount(0)
     wndEssence:SetAmount(monCurrent)
+  end
+end
+
+function PrimalTracker:OnWindowManagementReady()
+  Event_FireGenericEvent("WindowManagementRegister", {
+    strName = "PrimalTracker: Essence Display",
+    nSaveVersion = 1
+  })
+  Event_FireGenericEvent("WindowManagementAdd", {
+    wnd = self.wndEssenceDisplay,
+    strName = "PrimalTracker: Essence Display",
+    nSaveVersion = 1
+  })
+end
+
+function PrimalTracker:OnWindowManagementUpdate(tSettings)
+  if tSettings and tSettings.wnd and tSettings.wnd == self.wndEssenceDisplay then
+    local bMoveable = self.wndEssenceDisplay:IsStyleOn("Moveable")
+    local bHasMoved = tSettings.bHasMoved
+    self.wndEssenceDisplay:FindChild("Background"):Show(bMoveable)
+    self.wndEssenceDisplay:SetStyle("Sizable", bMoveable and bHasMoved)
+    self.wndEssenceDisplay:SetStyle("IgnoreMouse", not bMoveable)
   end
 end
 
