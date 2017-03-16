@@ -328,49 +328,6 @@ function PrimalTracker:OnChannelUpdate_Loot(eType, tEventArgs)
   if eType ~= GameLib.ChannelUpdateLootType.Currency then return end
   if not tEventArgs.monNew then return end
   if self:IsEssenceType(tEventArgs.monNew) then
-    --TODO remove debug stuff
-    table.insert(self.arrEssenceLootLog, {
-      eType = eType,
-      tEventArgs = tEventArgs,
-      monNew = {
-        GetAccountCurrencyType = tEventArgs.monNew:GetAccountCurrencyType(),
-        GetAltType = tEventArgs.monNew:GetAltType(),
-        GetAmount = tEventArgs.monNew:GetAmount(),
-        GetDenomAmounts = tEventArgs.monNew:GetDenomAmounts(),
-        GetDenomInfo = tEventArgs.monNew:GetDenomInfo(),
-        GetExchangeItem = tEventArgs.monNew:GetExchangeItem(),
-        GetMoneyString = tEventArgs.monNew:GetMoneyString(),
-        GetMoneyType = tEventArgs.monNew:GetMoneyType(),
-        GetTypeString = tEventArgs.monNew:GetTypeString(),
-      },
-      monSignatureBonus = {
-        GetAccountCurrencyType = tEventArgs.monSignatureBonus:GetAccountCurrencyType(),
-        GetAltType = tEventArgs.monSignatureBonus:GetAltType(),
-        GetAmount = tEventArgs.monSignatureBonus:GetAmount(),
-        GetDenomAmounts = tEventArgs.monSignatureBonus:GetDenomAmounts(),
-        GetDenomInfo = tEventArgs.monSignatureBonus:GetDenomInfo(),
-        GetExchangeItem = tEventArgs.monSignatureBonus:GetExchangeItem(),
-        GetMoneyString = tEventArgs.monSignatureBonus:GetMoneyString(),
-        GetMoneyType = tEventArgs.monSignatureBonus:GetMoneyType(),
-        GetTypeString = tEventArgs.monSignatureBonus:GetTypeString(),
-      },
-      monEssenceBonus = {
-        GetAccountCurrencyType = tEventArgs.monEssenceBonus:GetAccountCurrencyType(),
-        GetAltType = tEventArgs.monEssenceBonus:GetAltType(),
-        GetAmount = tEventArgs.monEssenceBonus:GetAmount(),
-        GetDenomAmounts = tEventArgs.monEssenceBonus:GetDenomAmounts(),
-        GetDenomInfo = tEventArgs.monEssenceBonus:GetDenomInfo(),
-        GetExchangeItem = tEventArgs.monEssenceBonus:GetExchangeItem(),
-        GetMoneyString = tEventArgs.monEssenceBonus:GetMoneyString(),
-        GetMoneyType = tEventArgs.monEssenceBonus:GetMoneyType(),
-        GetTypeString = tEventArgs.monEssenceBonus:GetTypeString(),
-      },
-    })
-    local strColor = tEventArgs.monNew:GetTypeString()
-    local nTotalAmount = tEventArgs.monNew:GetAmount()
-    local nSignatureBonus = tEventArgs.monSignatureBonus:GetAmount()
-    local nMultiplier = tEventArgs.monEssenceBonus:GetAmount()
-    Print(strColor..": "..nTotalAmount.." (+"..nSignatureBonus..") [x"..nMultiplier.."]")
     self:AddToEssenceDisplay(tEventArgs.monNew)
   end
 end
