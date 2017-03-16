@@ -40,8 +40,6 @@ function PrimalTracker:IsLoaded()
 end
 
 function PrimalTracker:OnLoad()
-  self:LoadMatchMaker()
-  self:BindHooks()
   self:LoadXML()
 end
 
@@ -52,6 +50,25 @@ end
 
 function PrimalTracker:OnDocumentLoaded(args)
   self.isXMLLoaded = true
+  self:SetupEssenceDisplay()
+  self:LoadMatchMaker()
+  self:BindHooks()
+end
+
+function PrimalTracker:SetupEssenceDisplay()
+  self.arrEssenceLootLog = {}
+  self.wndEssenceDisplay = Apollo.LoadForm(self.xmlDoc, "EssenceDisplay", nil, self)
+  local arrColors = { "Red", "Blue", "Green", "Purple" }
+  for idx, strColor in ipairs(arrColors) do
+    local mon = GameLib.GetPlayerCurrency(Money.CodeEnumCurrencyType[strColor.."Essence"])
+    mon:SetAmount(0)
+    self.wndEssenceDisplay:FindChild("Currencies:"..strColor):SetAmount(mon, true)
+  end
+  self.timerEssenceDisplayTimeout = ApolloTimer.Create(5, false, "OnEssenceDisplayTimeout", self)
+  Apollo.RegisterEventHandler("ChannelUpdate_Loot", "OnChannelUpdate_Loot", self)
+  Apollo.RegisterEventHandler("WindowManagementReady", "OnWindowManagementReady", self)
+  Apollo.RegisterEventHandler("WindowManagementUpdate", "OnWindowManagementUpdate", self)
+  self:OnWindowManagementReady()
 end
 
 function PrimalTracker:LoadMatchMaker()
@@ -299,6 +316,95 @@ function PrimalTracker:ConvertRewardData(rawData, currentSeconds)
     endTime = currentSeconds + rawData.nSecondsRemaining,
     multiplier = rawData.tRewardInfo.nMultiplier,
   }
+end
+
+function PrimalTracker:OnChannelUpdate_Loot(eType, tEventArgs)
+  if eType ~= GameLib.ChannelUpdateLootType.Currency then return end
+  if not tEventArgs.monNew then return end
+  if self:IsEssenceType(tEventArgs.monNew) then
+    self:AddToEssenceDisplay(tEventArgs.monNew)
+  end
+end
+
+function PrimalTracker:IsEssenceType(mon)
+  local eMoneyType = mon:GetMoneyType()
+  if self:IsMoneyTypeEssence(eMoneyType) then
+    return true
+  end
+  if eMoneyType ~= Money.CodeEnumCurrencyType.GroupCurrency then
+    return false
+  end
+  local eAccountCurrencyType = mon:GetAccountCurrencyType()
+  if self:IsAccountCurrencyTypeEssence(eAccountCurrencyType) then
+    return true
+  end
+end
+
+function PrimalTracker:IsMoneyTypeEssence(eMoneyType)
+  local bIsEssenceType = false
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.RedEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.BlueEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.GreenEssence
+  bIsEssenceType = bIsEssenceType or eMoneyType == Money.CodeEnumCurrencyType.PurpleEssence
+  return bIsEssenceType
+end
+
+function PrimalTracker:IsAccountCurrencyTypeEssence(eAccountCurrencyType)
+  local bIsEssenceType = false
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.RedEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.BlueEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.GreenEssence
+  bIsEssenceType = bIsEssenceType or eAccountCurrencyType == AccountItemLib.CodeEnumAccountCurrency.PurpleEssence
+  return bIsEssenceType
+end
+
+function PrimalTracker:AddToEssenceDisplay(mon)
+  self.timerEssenceDisplayTimeout:Stop()
+  self.timerEssenceDisplayTimeout:Start()
+  local strColor = mon:GetTypeString()
+  local nNew = mon:GetAmount()
+  local arrEssences = self.wndEssenceDisplay:FindChild("Currencies"):GetChildren()
+  for idx, wndEssence in ipairs(arrEssences) do
+    local monCurrent = wndEssence:GetCurrency()
+    if strColor == monCurrent:GetTypeString() then
+      wndEssence:Show(true, true)
+      local nCurrent = monCurrent:GetAmount()
+      monCurrent:SetAmount(nCurrent + nNew)
+      wndEssence:SetAmount(monCurrent)
+    end
+  end
+end
+
+function PrimalTracker:OnEssenceDisplayTimeout()
+  local arrEssences = self.wndEssenceDisplay:FindChild("Currencies"):GetChildren()
+  for idx, wndEssence in ipairs(arrEssences) do
+    wndEssence:Show(false)
+    local monCurrent = wndEssence:GetCurrency()
+    monCurrent:SetAmount(0)
+    wndEssence:SetAmount(monCurrent)
+  end
+end
+
+function PrimalTracker:OnWindowManagementReady()
+  Event_FireGenericEvent("WindowManagementRegister", {
+    strName = "PrimalTracker: Essence Display",
+    nSaveVersion = 1
+  })
+  Event_FireGenericEvent("WindowManagementAdd", {
+    wnd = self.wndEssenceDisplay,
+    strName = "PrimalTracker: Essence Display",
+    nSaveVersion = 1
+  })
+end
+
+function PrimalTracker:OnWindowManagementUpdate(tSettings)
+  if tSettings and tSettings.wnd and tSettings.wnd == self.wndEssenceDisplay then
+    local bMoveable = self.wndEssenceDisplay:IsStyleOn("Moveable")
+    local bHasMoved = tSettings.bHasMoved
+    self.wndEssenceDisplay:FindChild("Background"):Show(bMoveable)
+    self.wndEssenceDisplay:SetStyle("Sizable", bMoveable and bHasMoved)
+    self.wndEssenceDisplay:SetStyle("IgnoreMouse", not bMoveable)
+  end
 end
 
 function PrimalTracker:OnSave(saveLevel)
